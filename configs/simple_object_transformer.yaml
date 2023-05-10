@@ -1,0 +1,59 @@
+model:
+  base_learning_rate: 4.5e-06
+  target: taming.models.cond_transformer.Net2NetTransformer
+  params:
+    cond_stage_key: label
+    transformer_config:
+      target: taming.modules.transformer.mingpt.GPT
+      params:
+        vocab_size: 1024
+        block_size: 512
+        n_layer: 12
+        n_head: 2
+        n_embd: 1024
+    first_stage_config:
+      target: taming.models.vqgan.VQModel
+      params:
+        ckpt_path: logs/vqgan_imagenet_f16_1024/ckpts/last.ckpt
+        embed_dim: 256
+        n_embed: 1024
+        ddconfig:
+          double_z: false
+          z_channels: 256
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult:
+          - 1
+          - 1
+          - 2
+          - 2
+          - 4
+          num_res_blocks: 2
+          attn_resolutions:
+          - 16
+          dropout: 0.0
+        lossconfig:
+          target: taming.modules.losses.DummyLoss
+    cond_stage_config:
+      target: taming.modules.condition_encoder.simple_encoder.LabelEncoder
+      params:
+        a: 5
+
+
+data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 8
+    num_workers: 8
+    train:
+      target: taming.data.simple_object.SimpleObject
+      params:
+        data_root: /mnt/dataset/simple_object
+        img_size: 256
+    validation:
+      target: taming.data.simple_object.SimpleObject
+      params:
+        data_root: /mnt/dataset/simple_object
+        img_size: 256
